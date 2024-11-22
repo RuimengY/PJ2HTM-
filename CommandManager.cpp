@@ -2,18 +2,18 @@
 #include <iostream>
 
 // 构造函数
-CommandManager::CommandManager(HTMLTree &tree) : htmlTree(tree)
-{
-}
-// 记录命令
+CommandManager::CommandManager(HTMLTree &tree) : htmlTree(tree) {}
+
 void CommandManager::logCommand(const std::string &command, const std::vector<std::string> &args)
 {
-    undo_stack.push({command});
-    undo_stack.top().insert(undo_stack.top().end(), args.begin(), args.end());
+    std::vector<std::string> action = {command};
+    action.insert(action.end(), args.begin(), args.end());
+    undo_stack.push(action);
     while (!redo_stack.empty())
-        redo_stack.pop(); // 清空重做栈
+    {
+        redo_stack.pop();
+    }
 }
-
 // 执行撤销
 void CommandManager::undo()
 {
@@ -29,10 +29,21 @@ void CommandManager::undo()
     std::cout << "Undo: " << action[0] << "\n";
 
     // 处理撤销逻辑
-    if (action[0] == "append" && action[1] == "text")
+    if (action[0] == "append")
     {
-        // 撤销 append text 命令
-        htmlTree.removeText(action[2]);
+        if (action[1] == "title")
+        {
+            htmlTree.removeText(action[2]);
+        }
+        else
+        {
+            htmlTree.deleteNode(action[2]);
+        }
+    }
+    else if (action[0] == "delete")
+    {
+        htmlTree.addNode(action[1], action[2], action[3]);
+        htmlTree.appendText(action[2], action[4]);
     }
 }
 
@@ -51,9 +62,20 @@ void CommandManager::redo()
     std::cout << "Redo: " << action[0] << "\n";
 
     // 处理重做逻辑
-    if (action[0] == "append" && action[1] == "text")
+    if (action[0] == "append")
     {
-        // 重做 append text 命令
-        htmlTree.appendText(action[2], action[3]);
+        if (action[1] == "title")
+        {
+            htmlTree.appendText(action[2], action[3]);
+        }
+        else
+        {
+            htmlTree.addNode(action[1], action[2], action[3]);
+            htmlTree.appendText(action[2], action[4]);
+        }
+    }
+    else if (action[0] == "delete")
+    {
+        htmlTree.deleteNode(action[1]);
     }
 }
