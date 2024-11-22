@@ -24,12 +24,20 @@ public:
     // 查找节点
     Node *findNodeById(const std::string &id);
 
+    // 添加标题内容
+    void appendTitle(const std::string &text);
+
+    // 添加文本内容
+    void appendText(const std::string &id, const std::string &text);
+
+    // 删除文本内容
+    void removeText(const std::string &id);
+
     // 添加节点
     void addNode(const std::string &tag, const std::string &id, const std::string &parent_id, const std::string &text = "");
 
     // 删除节点
     void deleteNode(const std::string &id);
-    void deleteSubtree(Node *node);
 
     // 编辑节点ID
     void editNodeId(const std::string &oldId, const std::string &newId);

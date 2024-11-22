@@ -33,6 +33,15 @@ Node *HTMLTree::findNodeById(const std::string &id)
     return id_map.count(id) ? id_map[id] : nullptr;
 }
 
+// 添加标题内容
+void HTMLTree::appendTitle(const std::string &text)
+{
+    if (id_map.find("title") != id_map.end())
+    {
+        id_map["title"]->text = text;
+    }
+}
+
 // 添加节点
 void HTMLTree::addNode(const std::string &tag, const std::string &id, const std::string &parent_id, const std::string &text)
 {
@@ -96,6 +105,32 @@ void HTMLTree::deleteNode(const std::string &id)
 
         // 最后删除父节点的直接子节点
         parent->children.erase(std::remove(parent->children.begin(), parent->children.end(), node), parent->children.end());
+    }
+}
+
+// 添加文本到指定节点
+void HTMLTree::appendText(const std::string &id, const std::string &text)
+{
+    if (id_map.find(id) != id_map.end())
+    {
+        id_map[id]->text += text;
+    }
+    else
+    {
+        std::cerr << "Error: Node with ID " << id << " not found.\n";
+    }
+}
+
+// 从指定节点删除文本
+void HTMLTree::removeText(const std::string &id)
+{
+    if (id_map.find(id) != id_map.end())
+    {
+        id_map[id]->text.clear();
+    }
+    else
+    {
+        std::cerr << "Error: Node with ID " << id << " not found.\n";
     }
 }
 

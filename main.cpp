@@ -6,7 +6,7 @@
 int main()
 {
     HTMLTree tree;
-    CommandManager cmd_manager;
+    CommandManager cmd_manager(tree);
 
     std::string command;
     while (true)
@@ -26,7 +26,15 @@ int main()
             std::string cmd, tag, id, parent_id, text;
             ss >> cmd >> tag >> id >> parent_id;
             std::getline(ss, text);
-            tree.addNode(tag, id, parent_id, text);
+            if (tag == "title")
+            {
+                tree.appendText(id, text);
+            }
+            else
+            {
+                tree.addNode(tag, id, parent_id);
+                tree.appendText(id, text);
+            }
             cmd_manager.logCommand("append", {tag, id, parent_id, text});
         }
         else if (command.substr(0, 6) == "delete")
