@@ -29,6 +29,13 @@ public:
 
     // 删除节点
     void deleteNode(const std::string &id);
+    void deleteSubtree(Node *node);
+
+    // 编辑节点ID
+    void editNodeId(const std::string &oldId, const std::string &newId);
+
+    // 编辑节点文本
+    void editNodeText(const std::string &id, const std::string &text);
 
     // 打印树状结构
     void printTree() const;

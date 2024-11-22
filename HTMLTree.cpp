@@ -1,6 +1,7 @@
 #include "HTMLTree.h"
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 
 // 构造函数
 HTMLTree::HTMLTree()
@@ -63,21 +64,63 @@ void HTMLTree::deleteNode(const std::string &id)
     }
 
     // 从父节点的子节点列表中删除
-    for (auto &[key, value] : id_map)
+    Node *parent = nullptr;
+    for (auto [key, value] : id_map)
     {
-        if (value == node)
+        if (std::find(value->children.begin(), value->children.end(), node) != value->children.end())
         {
-            id_map.erase(key);
+            parent = value;
             break;
         }
     }
-    delete node;
+
+    if (parent)
+    {
+        // 递归删除所有子节点
+        std::vector<Node *> stack;
+        stack.push_back(node);
+
+        while (!stack.empty())
+        {
+            Node *current = stack.back();
+            stack.pop_back();
+
+            for (Node *child : current->children)
+            {
+                stack.push_back(child);
+            }
+
+            id_map.erase(current->id);
+            // delete current;
+        }
+
+        // 最后删除父节点的直接子节点
+        parent->children.erase(std::remove(parent->children.begin(), parent->children.end(), node), parent->children.end());
+    }
 }
 
-// 打印树状结构
-void HTMLTree::printTree() const
+void HTMLTree::editNodeId(const std::string &oldId, const std::string &newId)
 {
-    printTreeRecursive(root, 0);
+    Node *node = findNodeById(oldId);
+    if (!node || id_map.count(newId))
+    {
+        std::cerr << "Error: Invalid old ID or duplicate new ID.\n";
+        return;
+    }
+    id_map.erase(oldId);
+    node->id = newId;
+    id_map[newId] = node;
+}
+
+void HTMLTree::editNodeText(const std::string &id, const std::string &text)
+{
+    Node *node = findNodeById(id);
+    if (!node)
+    {
+        std::cerr << "Error: Invalid node ID.\n";
+        return;
+    }
+    node->text = text;
 }
 
 // 递归打印树
@@ -85,14 +128,42 @@ void HTMLTree::printTreeRecursive(Node *node, int depth) const
 {
     if (!node)
         return;
+    if (node->tag.empty()) // 检查节点标签是否为空
+        return;
+
     std::string indent(depth * 2, ' ');
-    std::cout << indent << node->tag;
+    std::cout << indent << "<" << node->tag;
     if (!node->id.empty())
-        std::cout << "#" << node->id;
-    std::cout << "\n";
-    for (Node *child : node->children)
+        std::cout << " id=\"" << node->id << "\"";
+    std::cout << ">";
+
+    if (!node->text.empty())
     {
-        printTreeRecursive(child, depth + 1);
+        std::cout << node->text;
+    }
+
+    if (!node->children.empty())
+    {
+        std::cout << "\n";
+        for (Node *child : node->children)
+        {
+            if (child) // 确保子节点不为空
+            {
+                printTreeRecursive(child, depth + 1);
+            }
+        }
+        std::cout << indent;
+    }
+
+    std::cout << "</" << node->tag << ">\n";
+}
+
+// 打印树的入口函数
+void HTMLTree::printTree() const
+{
+    if (root)
+    {
+        printTreeRecursive(root, 0);
     }
 }
 

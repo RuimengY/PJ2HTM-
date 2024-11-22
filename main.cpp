@@ -53,3 +53,31 @@ int main()
 
     return 0;
 }
+
+/*
+int main()
+{
+    HTMLTree tree;
+    tree.addNode("div", "node1", "body", "Hello World");
+    tree.addNode("div", "node2", "body", "Another Node");
+    tree.addNode("p", "node4", "node1", "Appended Node");
+
+    std::cout << "Initial tree:\n";
+    tree.printTree();
+
+    std::cout << "\nAfter deleting node1:\n";
+    tree.deleteNode("node1");
+    tree.printTree();
+
+    std::cout << "\nAfter editing node2 ID to node5:\n";
+    tree.editNodeId("node2", "node5");
+    tree.printTree();
+
+    std::cout << "\nAfter editing node5 text:\n";
+    tree.editNodeText("node5", "Updated Text");
+    tree.printTree();
+
+    return 0;
+}
+
+*/
