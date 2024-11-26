@@ -14,9 +14,6 @@ private:
     // 递归打印树
     void printTreeRecursive(Node *node, int depth) const;
 
-    // 递归保存树
-    void saveNodeToFile(Node *node, std::ostream &output, int depth) const;
-
 public:
     // 构造函数
     HTMLTree();
@@ -54,9 +51,11 @@ public:
     // 打印缩进结构
     void printIndentedTree(int indent = 2) const;
 
-    // 文件操作
-    void readFromFile(const std::string &path); // 从文件读取HTML
-    void saveToFile(const std::string &path);   // 保存HTML到文件
+    void parseHtmlToCommands(const std::string &path);
+
+    void saveToFile(const std::string &path);
+
+    void saveNodeToFile(Node *node, std::ostream &output, int depth) const;
 };
 
 #endif // HTMLTREE_H
