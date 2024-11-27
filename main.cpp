@@ -53,6 +53,24 @@ int main()
         {
             cmd_manager.redo();
         }
+        else if (command.substr(0, 4) == "read")
+        {
+            std::istringstream ss(command);
+            std::string cmd, path;
+            ss >> cmd >> path;
+
+            // 调用解析 HTML 文件并生成命令行
+            tree.parseHtmlToCommands(path);
+        }
+
+        else if (command.substr(0, 4) == "save")
+        {
+            std::istringstream ss(command);
+            std::string cmd, path;
+            ss >> cmd >> path;
+            tree.saveToFile(path);
+        }
+
         else
         {
             std::cerr << "Unknown command.\n";

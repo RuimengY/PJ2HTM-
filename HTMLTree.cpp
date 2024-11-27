@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <stack>
+#include <regex>
 
 // 构造函数
 HTMLTree::HTMLTree()
@@ -212,6 +213,8 @@ void HTMLTree::printIndentedTree(int indent) const
     std::cerr << "Not implemented yet.\n";
 }
 
+// HTMLTree.cpp
+
 void HTMLTree::parseHtmlToCommands(const std::string &path)
 {
     std::ifstream file(path);
@@ -250,6 +253,15 @@ void HTMLTree::parseHtmlToCommands(const std::string &path)
             // 闭合标签，出栈
             node_stack.pop();
         }
+
+        // 如果这一行的首字符不是"<",修改栈顶的node,其text为这一行的内容。同时改变node父节点的指向
+        if (line[0] != '<')
+        {
+            Node *parent_node = node_stack.top().first;
+            parent_node->text += line;
+            continue;
+        }
+
         else if (line[0] == '<' && line[1] != '/')
         {
             // 解析起始标签
@@ -287,6 +299,7 @@ void HTMLTree::parseHtmlToCommands(const std::string &path)
 
             // 处理文本内容
             std::string text = "";
+
             if (line[end_tag_pos + 1] != '<')
             {
                 size_t text_start = end_tag_pos + 1;
@@ -295,19 +308,12 @@ void HTMLTree::parseHtmlToCommands(const std::string &path)
                 text.erase(0, text.find_first_not_of(" \t"));
                 text.erase(text.find_last_not_of(" \t") + 1);
             }
-
-            // 输出命令行
-            std::cout << "append " << tag << " " << id << " " << parent_id;
-            if (!text.empty())
-                std::cout << " " << text;
-            std::cout << "\n";
-
             // 创建并添加新节点
             Node *new_node = new Node(tag, id, text);
             parent_node->children.push_back(new_node);
             id_map[id] = new_node;
 
-            // 如果不是自闭合标签，入栈
+            // 如果不是自闭合标签,而且结尾不是</title>之类的形式，入栈
             if (!self_closing && line.find("</") == std::string::npos)
             {
                 node_stack.push({new_node, id});
