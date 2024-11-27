@@ -308,7 +308,7 @@ void HTMLTree::parseHtmlToCommands(const std::string &path)
             id_map[id] = new_node;
 
             // 如果不是自闭合标签，入栈
-            if (!self_closing)
+            if (!self_closing && line.find("</") == std::string::npos)
             {
                 node_stack.push({new_node, id});
             }
