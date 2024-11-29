@@ -48,9 +48,6 @@ public:
     // 打印树状结构
     void printTree() const;
 
-    // 打印缩进结构
-    void printIndentedTree(int indent = 2) const;
-
     void parseHtmlToCommands(const std::string &filePath);
 
     void saveToFile(const std::string &path);
