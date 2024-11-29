@@ -2,6 +2,7 @@
 #include "CommandManager.h"
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 
 int main()
 {
@@ -42,8 +43,38 @@ int main()
             std::istringstream ss(command);
             std::string cmd, id;
             ss >> cmd >> id;
-            tree.deleteNode(id);
-            cmd_manager.logCommand("delete", {id});
+
+            // 获取要删除节点的详细信息以便撤销
+            Node *node = tree.findNodeById(id);
+            if (node)
+            {
+                std::vector<std::string> delete_args = {id};
+                delete_args.insert(delete_args.begin(), node->tag);
+
+                // 找到父节点
+                for (auto &[key, parent] : tree.id_map)
+                {
+                    auto it = std::find(parent->children.begin(), parent->children.end(), node);
+                    if (it != parent->children.end())
+                    {
+                        delete_args.push_back(parent->id);
+                        break;
+                    }
+                }
+
+                delete_args.push_back(node->text);
+                delete_args.push_back(node->is_self_closing ? "true" : "false");
+
+                // 添加所有属性
+                for (const auto &attr : node->attributes)
+                {
+                    delete_args.push_back(attr.first);
+                    delete_args.push_back(attr.second);
+                }
+
+                tree.deleteNode(id);
+                cmd_manager.logCommand("delete", delete_args);
+            }
         }
         else if (command == "undo")
         {

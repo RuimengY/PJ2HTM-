@@ -117,7 +117,15 @@ void HTMLTree::appendText(const std::string &id, const std::string &text)
 {
     if (id_map.find(id) != id_map.end())
     {
-        id_map[id]->text += text;
+        // 如果原文本为空，直接赋值；否则添加换行后再追加
+        if (id_map[id]->text.empty())
+        {
+            id_map[id]->text = text;
+        }
+        else
+        {
+            id_map[id]->text += "\n" + text;
+        }
     }
     else
     {
@@ -179,30 +187,45 @@ void HTMLTree::printTreeRecursive(Node *node, int depth) const
 {
     if (!node)
         return;
-    if (node->tag.empty()) // 检查节点标签是否为空
+    if (node->tag.empty())
         return;
-    std::string indent(depth * 2, ' ');
-    std::cout << indent << "<" << node->tag;
 
-    // 打印属性
+    std::string indent(depth * 2, ' ');
+    std::cout << indent << "<" << node->tag << " id=\"" << node->id << "\"";
+
+    // 打印其他属性
     for (const auto &attr : node->attributes)
     {
-        std::cout << " " << attr.first << "=\"" << attr.second << "\"";
+        if (attr.first != "id")
+        {
+            std::cout << " " << attr.first << "=\"" << attr.second << "\"";
+        }
     }
 
     // 自闭合标签处理
     if (node->is_self_closing)
     {
-        std::cout << " />\n"; // 自闭合标签直接结束
+        std::cout << " />\n";
         return;
     }
 
     std::cout << ">";
 
-    // 打印文本内容
+    // 改进文本内容打印
     if (!node->text.empty())
     {
-        std::cout << node->text;
+        // 如果文本包含换行，则按多行处理
+        std::istringstream iss(node->text);
+        std::string line;
+        bool first_line = true;
+
+        while (std::getline(iss, line))
+        {
+            if (!first_line)
+                std::cout << indent << "  "; // 额外缩进处理多行文本
+            std::cout << line;
+            first_line = false;
+        }
     }
 
     // 打印子节点
@@ -214,13 +237,12 @@ void HTMLTree::printTreeRecursive(Node *node, int depth) const
             if (child)
                 printTreeRecursive(child, depth + 1);
         }
-        std::cout << indent; // 缩进与开始标签一致
+        std::cout << indent;
     }
 
     // 打印结束标签
     std::cout << "</" << node->tag << ">\n";
 }
-
 void HTMLTree::printTree() const
 {
     if (root)
@@ -243,7 +265,7 @@ void HTMLTree::parseHtmlToCommands(const std::string &path)
     id_map.clear();
 
     // 初始化根节点
-    std::stack<std::pair<Node *, std::string>> node_stack; // 栈存储当前父节点及其ID
+    std::stack<std::pair<Node *, std::string>> node_stack;
     root = new Node("html", "html");
     id_map["html"] = root;
     node_stack.push({root, "html"});
@@ -256,16 +278,12 @@ void HTMLTree::parseHtmlToCommands(const std::string &path)
         line.erase(line.find_last_not_of(" \t") + 1);
 
         if (line.empty())
-            continue; // 跳过空行
-
+            continue;
         if (line.substr(0, 4) == "<!--")
-        {
-            continue; // 跳过注释
-        }
+            continue;
 
         if (line.substr(0, 2) == "</")
         {
-            // 闭合标签，出栈
             if (!node_stack.empty())
                 node_stack.pop();
             continue;
@@ -275,7 +293,7 @@ void HTMLTree::parseHtmlToCommands(const std::string &path)
         {
             // 处理标签外部的文本内容
             Node *parent_node = node_stack.top().first;
-            parent_node->text += line; // 累加到当前父节点的文本
+            parent_node->text += line;
             continue;
         }
 
@@ -295,6 +313,7 @@ void HTMLTree::parseHtmlToCommands(const std::string &path)
         tag_stream >> tag;
 
         std::unordered_map<std::string, std::string> attributes;
+        std::string id_value = tag; // 默认ID为标签名
         while (tag_stream >> attr)
         {
             size_t eq_pos = attr.find('=');
@@ -304,27 +323,33 @@ void HTMLTree::parseHtmlToCommands(const std::string &path)
                 std::string value = attr.substr(eq_pos + 1);
                 if (!value.empty() && value.front() == '"' && value.back() == '"')
                 {
-                    value = value.substr(1, value.size() - 2); // 去掉引号
+                    value = value.substr(1, value.size() - 2);
+                }
+
+                // 特别处理ID属性
+                if (key == "id")
+                {
+                    id_value = value;
                 }
                 attributes[key] = value;
             }
         }
 
-        // 获取当前父节点信息
         Node *parent_node = node_stack.top().first;
 
         // 如果是自闭合标签，直接创建节点并跳过后续处理
         if (is_self_closing)
         {
-            Node *new_node = new Node(tag, attributes.count("id") ? attributes["id"] : tag, "", true);
+            Node *new_node = new Node(tag, id_value, "", true);
+            new_node->attributes = attributes; // 保留所有属性
             parent_node->children.push_back(new_node);
             id_map[new_node->id] = new_node;
-            continue; // 跳过后续逻辑，不处理文本和子节点栈操作
+            continue;
         }
 
         // 创建新节点
-        Node *new_node = new Node(tag, attributes.count("id") ? attributes["id"] : tag, "");
-        new_node->attributes = attributes;
+        Node *new_node = new Node(tag, id_value, "");
+        new_node->attributes = attributes; // 保留所有属性
 
         // 添加新节点到父节点
         parent_node->children.push_back(new_node);
@@ -336,7 +361,7 @@ void HTMLTree::parseHtmlToCommands(const std::string &path)
             size_t text_start = end_tag_pos + 1;
             size_t text_end = line.find('<', text_start);
             if (text_end == std::string::npos)
-                text_end = line.size(); // 如果没有下一个标签，取到行末
+                text_end = line.size();
 
             std::string text_content = line.substr(text_start, text_end - text_start);
             text_content.erase(0, text_content.find_first_not_of(" \t"));
@@ -344,9 +369,7 @@ void HTMLTree::parseHtmlToCommands(const std::string &path)
 
             // 如果提取到的文本非空，设置到当前节点
             if (!text_content.empty())
-            {
                 new_node->text = text_content;
-            }
         }
 
         // 如果不是自闭合标签，入栈
@@ -383,12 +406,17 @@ void HTMLTree::saveNodeToFile(Node *node, std::ostream &output, int depth) const
     // 打开标签
     output << indent << "<" << node->tag;
 
-    // 添加属性
-    if (!node->id.empty())
-        output << " id=\"" << node->id << "\"";
+    // 始终添加id属性
+    output << " id=\"" << node->id << "\"";
+
+    // 添加其他属性
     for (const auto &attr : node->attributes)
     {
-        output << " " << attr.first << "=\"" << attr.second << "\"";
+        // 排除重复的ID
+        if (attr.first != "id")
+        {
+            output << " " << attr.first << "=\"" << attr.second << "\"";
+        }
     }
 
     // 处理自闭合标签

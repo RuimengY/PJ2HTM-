@@ -8,13 +8,13 @@
 class HTMLTree
 {
 private:
-    Node *root;                                     // HTML树的根节点
-    std::unordered_map<std::string, Node *> id_map; // ID到节点的映射表
+    Node *root; // HTML树的根节点
 
     // 递归打印树
     void printTreeRecursive(Node *node, int depth) const;
 
 public:
+    std::unordered_map<std::string, Node *> id_map; // ID到节点的映射表
     // 构造函数
     HTMLTree();
 
