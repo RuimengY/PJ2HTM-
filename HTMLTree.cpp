@@ -269,10 +269,13 @@ void HTMLTree::parseHtmlToCommands(const std::string &path)
     root = new Node("html", "html");
     id_map["html"] = root;
     node_stack.push({root, "html"});
-
     std::string line;
+
     while (std::getline(file, line))
     {
+        // 如果是"<html>"标签，直接跳过
+        if (line.find("<html>") != std::string::npos)
+            continue;
         // 去掉行两端的空格
         line.erase(0, line.find_first_not_of(" \t"));
         line.erase(line.find_last_not_of(" \t") + 1);
