@@ -182,18 +182,129 @@ void HTMLTree::removeText(const std::string &id)
     std::cout << "Text cleared for Node with ID " << id << ".\n";
 }
 
-// 打印树
-void HTMLTree::printTreeRecursive(Node *node, int depth) const
+std::vector<Node *> HTMLTree::findNodesByTag(const std::string &tag) const
+{
+    std::vector<Node *> result;
+    std::stack<Node *> stack;
+    stack.push(root);
+
+    while (!stack.empty())
+    {
+        Node *current = stack.top();
+        stack.pop();
+
+        if (current->tag == tag)
+        {
+            result.push_back(current);
+        }
+
+        // Push children in reverse order to maintain order
+        for (auto it = current->children.rbegin(); it != current->children.rend(); ++it)
+        {
+            stack.push(*it);
+        }
+    }
+
+    return result;
+}
+
+void HTMLTree::printNodeInfo(Node *node, std::ostream &output) const
+{
+    if (!node)
+    {
+        output << "Node not found.\n";
+        return;
+    }
+
+    output << "Tag: " << node->tag << "\n";
+    output << "ID: " << node->id << "\n";
+
+    if (!node->text.empty())
+    {
+        output << "Text: " << node->text << "\n";
+    }
+
+    Node *parent = findParentNode(node->id);
+    if (parent)
+    {
+        output << "Parent Tag: " << parent->tag << "\n";
+    }
+}
+
+Node *HTMLTree::findParentNode(const std::string &childId) const
+{
+    for (auto &[key, value] : id_map)
+    {
+        auto it = std::find_if(value->children.begin(), value->children.end(),
+                               [&childId](Node *child)
+                               { return child->id == childId; });
+        if (it != value->children.end())
+        {
+            return value;
+        }
+    }
+    return nullptr;
+}
+
+void HTMLTree::insertNodeBefore(const std::string &tag, const std::string &id,
+                                const std::string &beforeId, const std::string &text)
+{
+    if (id_map.count(id))
+    {
+        std::cerr << "Error: Node ID already exists.\n";
+        return;
+    }
+
+    Node *before_node = findNodeById(beforeId);
+    if (!before_node)
+    {
+        std::cerr << "Error: Before node not found.\n";
+        return;
+    }
+
+    Node *parent = findParentNode(beforeId);
+    if (!parent)
+    {
+        std::cerr << "Error: Parent node not found.\n";
+        return;
+    }
+
+    Node *new_node = new Node(tag, id, text);
+
+    // Find and insert before the specific node
+    auto it = std::find(parent->children.begin(), parent->children.end(), before_node);
+    if (it != parent->children.end())
+    {
+        parent->children.insert(it, new_node);
+    }
+
+    id_map[id] = new_node;
+}
+
+void HTMLTree::printTree() const
+{
+    printTreeRecursive(root, 0, 2);
+}
+
+void HTMLTree::printTree(int indent) const
+{
+    if (root)
+    {
+        printTreeRecursive(root, 0, indent);
+    }
+}
+
+void HTMLTree::printTreeRecursive(Node *node, int depth, int indent) const
 {
     if (!node)
         return;
     if (node->tag.empty())
         return;
 
-    std::string indent(depth * 2, ' ');
-    std::cout << indent << "<" << node->tag << " id=\"" << node->id << "\"";
+    std::string indentation(depth * indent, ' ');
+    std::cout << indentation << "<" << node->tag << " id=\"" << node->id << "\"";
 
-    // 打印其他属性
+    // Print other attributes
     for (const auto &attr : node->attributes)
     {
         if (attr.first != "id")
@@ -202,7 +313,7 @@ void HTMLTree::printTreeRecursive(Node *node, int depth) const
         }
     }
 
-    // 自闭合标签处理
+    // Self-closing tag handling
     if (node->is_self_closing)
     {
         std::cout << " />\n";
@@ -211,10 +322,9 @@ void HTMLTree::printTreeRecursive(Node *node, int depth) const
 
     std::cout << ">";
 
-    // 改进文本内容打印
+    // Improved text content printing
     if (!node->text.empty())
     {
-        // 如果文本包含换行，则按多行处理
         std::istringstream iss(node->text);
         std::string line;
         bool first_line = true;
@@ -222,33 +332,26 @@ void HTMLTree::printTreeRecursive(Node *node, int depth) const
         while (std::getline(iss, line))
         {
             if (!first_line)
-                std::cout << indent << "  "; // 额外缩进处理多行文本
+                std::cout << indentation << std::string(indent, ' ');
             std::cout << line;
             first_line = false;
         }
     }
 
-    // 打印子节点
+    // Print children
     if (!node->children.empty())
     {
         std::cout << "\n";
         for (Node *child : node->children)
         {
             if (child)
-                printTreeRecursive(child, depth + 1);
+                printTreeRecursive(child, depth + 1, indent);
         }
-        std::cout << indent;
+        std::cout << indentation;
     }
 
-    // 打印结束标签
+    // Print closing tag
     std::cout << "</" << node->tag << ">\n";
-}
-void HTMLTree::printTree() const
-{
-    if (root)
-    {
-        printTreeRecursive(root, 0);
-    }
 }
 
 void HTMLTree::parseHtmlToCommands(const std::string &path)

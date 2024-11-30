@@ -4,15 +4,13 @@
 #include "Node.h"
 #include <string>
 #include <unordered_map>
+#include <iostream>
+#include <vector>
 
 class HTMLTree
 {
 private:
     Node *root; // HTML树的根节点
-
-    // 递归打印树
-    void printTreeRecursive(Node *node, int depth) const;
-
 public:
     std::unordered_map<std::string, Node *> id_map; // ID到节点的映射表
     // 构造函数
@@ -45,14 +43,26 @@ public:
     // 编辑节点文本
     void editNodeText(const std::string &id, const std::string &text);
 
-    // 打印树状结构
-    void printTree() const;
-
     void parseHtmlToCommands(const std::string &filePath);
 
+    // 保存HTML到文件
     void saveToFile(const std::string &path);
 
     void saveNodeToFile(Node *node, std::ostream &output, int depth) const;
+
+    // 寻找所有具有特定标签的节点
+    std::vector<Node *> findNodesByTag(const std::string &tag) const;
+    void printNodeInfo(Node *node, std::ostream &output = std::cout) const;
+    Node *findParentNode(const std::string &childId) const;
+
+    // 插入节点
+    void insertNodeBefore(const std::string &tag, const std::string &id,
+                          const std::string &beforeId, const std::string &text = "");
+    // 打印树状结构
+    void printTree() const;
+    // 其余的打印函数
+    void printTree(int indent) const;
+    void printTreeRecursive(Node *node, int depth, int indent) const;
 };
 
 #endif // HTMLTREE_H

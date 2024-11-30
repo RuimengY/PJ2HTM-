@@ -65,6 +65,21 @@ int main()
                 delete_args.push_back(node->text);
                 delete_args.push_back(node->is_self_closing ? "true" : "false");
 
+                // 找到下一个兄弟节点，以便撤销时插入到正确位置
+                Node *sibling = nullptr;
+                for (auto &[key, parent] : tree.id_map)
+                {
+                    auto it = std::find(parent->children.begin(), parent->children.end(), node);
+                    if (it != parent->children.end())
+                    {
+                        if (std::next(it) != parent->children.end())
+                        {
+                            sibling = *std::next(it);
+                        }
+                        break;
+                    }
+                }
+
                 // 添加所有属性
                 for (const auto &attr : node->attributes)
                 {
@@ -102,6 +117,94 @@ int main()
             tree.saveToFile(path);
         }
 
+        else if (command.substr(0, 8) == "find-tag")
+        {
+            std::istringstream ss(command);
+            std::string cmd, tag;
+            ss >> cmd >> tag;
+
+            std::vector<Node *> nodes = tree.findNodesByTag(tag);
+            if (nodes.empty())
+            {
+                std::cout << "No nodes found with tag: " << tag << "\n";
+            }
+            else
+            {
+                std::cout << "Found " << nodes.size() << " node(s) with tag: " << tag << "\n";
+                for (Node *node : nodes)
+                {
+                    tree.printNodeInfo(node);
+                    std::cout << "---\n";
+                }
+            }
+        }
+        else if (command.substr(0, 7) == "find-id")
+        {
+            std::istringstream ss(command);
+            std::string cmd, id;
+            ss >> cmd >> id;
+
+            Node *node = tree.findNodeById(id);
+            if (node)
+            {
+                tree.printNodeInfo(node);
+            }
+            else
+            {
+                std::cout << "No node found with ID: " << id << "\n";
+            }
+        }
+        else if (command.substr(0, 6) == "insert")
+        {
+            std::istringstream ss(command);
+            std::string cmd, tag, id, beforeId;
+            std::string text;
+            ss >> cmd >> tag >> id >> beforeId;
+            std::getline(ss, text);
+
+            text.erase(0, text.find_first_not_of(" \t"));
+            text.erase(text.find_last_not_of(" \t") + 1);
+
+            tree.insertNodeBefore(tag, id, beforeId, text);
+            cmd_manager.logCommand("insert", {tag, id, beforeId, text});
+        }
+        else if (command.substr(0, 9) == "edit-text")
+        {
+            std::istringstream ss(command);
+            std::string cmd, id, text;
+            ss >> cmd >> id;
+            std::getline(ss, text);
+
+            text.erase(0, text.find_first_not_of(" \t"));
+            text.erase(text.find_last_not_of(" \t") + 1);
+
+            tree.editNodeText(id, text);
+            cmd_manager.logCommand("edit-text", {id, text});
+        }
+        else if (command.substr(0, 7) == "edit-id")
+        {
+            std::istringstream ss(command);
+            std::string cmd, oldId, newId;
+            ss >> cmd >> oldId >> newId;
+
+            tree.editNodeId(oldId, newId);
+            cmd_manager.logCommand("edit-id", {oldId, newId});
+        }
+        else if (command.substr(0, 12) == "print-indent")
+        {
+            std::istringstream ss(command);
+            std::string cmd;
+            int indent = 2; // Default indent
+            ss >> cmd;
+            if (ss >> indent)
+            {
+                tree.printTree(indent);
+            }
+            else
+            {
+                tree.printTree();
+            }
+        }
         else
         {
             std::cerr << "Unknown command.\n";
